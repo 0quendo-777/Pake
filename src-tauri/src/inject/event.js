@@ -1151,3 +1151,95 @@ function getFilenameFromUrl(url) {
     return `image-${timestamp}.png`;
   }
 }
+
+// Zoom Slider UI - Press Ctrl+Z to toggle
+(function() {
+  const SLIDER_ID = 'pake-zoom-slider';
+  let sliderEl = null;
+
+  function createZoomSlider() {
+    if (sliderEl) return sliderEl;
+    const existing = document.getElementById(SLIDER_ID);
+    if (existing) existing.remove();
+
+    const currentZoom = parseInt(window.localStorage.getItem("htmlZoom") || (window.pakeConfig?.zoom || 100));
+
+    const div = document.createElement('div');
+    div.id = SLIDER_ID;
+    div.innerHTML = `
+      <style>
+        #${SLIDER_ID} { position: fixed; bottom: 80px; right: 20px; background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 16px; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 8px 32px rgba(0,0,0,0.4); min-width: 200px; }
+        #${SLIDER_ID} .title { color: #fff; font-size: 12px; margin-bottom: 12px; text-align: center; font-weight: 600; }
+        #${SLIDER_ID} .zoom-display { color: #58a6ff; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 10px; }
+        #${SLIDER_ID} input[type="range"] { width: 100%; height: 6px; -webkit-appearance: none; background: #333; border-radius: 3px; outline: none; margin: 8px 0; }
+        #${SLIDER_ID} input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #58a6ff; border-radius: 50%; cursor: pointer; }
+        #${SLIDER_ID} .btn-row { display: flex; justify-content: space-between; margin-top: 12px; }
+        #${SLIDER_ID} button { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; flex: 1; margin: 0 4px; }
+        #${SLIDER_ID} button:hover { background: #444; }
+        #${SLIDER_ID} .close-btn { background: #d32f2f !important; font-size: 11px; padding: 4px 8px; margin-top: 8px; }
+        #${SLIDER_ID} .close-btn:hover { background: #b71c1c !important; }
+      </style>
+      <div class="title">🔍 PAGE ZOOM</div>
+      <div class="zoom-display"><span id="${SLIDER_ID}-value">${currentZoom}</span>%</div>
+      <input type="range" id="${SLIDER_ID}-range" min="30" max="200" value="${currentZoom}">
+      <div class="btn-row">
+        <button onclick="window.pakeZoomMinus()">➖ Minus</button>
+        <button onclick="window.pakeZoomPlus()">➕ Plus</button>
+      </div>
+      <button class="close-btn" onclick="document.getElementById('${SLIDER_ID}').remove(); window.pakeZoomSliderEl=null;">✕ Close</button>
+    `;
+
+    const range = div.querySelector(`#${SLIDER_ID}-range`);
+    const valueDisplay = div.querySelector(`#${SLIDER_ID}-value`);
+    range.addEventListener('input', function() {
+      const val = this.value;
+      valueDisplay.textContent = val;
+      window.pakeSetZoom(val);
+    });
+
+    document.body.appendChild(div);
+    sliderEl = div;
+    return div;
+  }
+
+  window.pakeZoomMinus = function() {
+    const current = parseInt(window.localStorage.getItem("htmlZoom") || (window.pakeConfig?.zoom || 100));
+    const newZoom = Math.max(30, current - 10);
+    window.pakeSetZoom(newZoom);
+    if (document.getElementById(SLIDER_ID)) {
+      document.getElementById(SLIDER_ID + '-range').value = newZoom;
+      document.getElementById(SLIDER_ID + '-value').textContent = newZoom;
+    }
+  };
+
+  window.pakeZoomPlus = function() {
+    const current = parseInt(window.localStorage.getItem("htmlZoom") || (window.pakeConfig?.zoom || 100));
+    const newZoom = Math.min(200, current + 10);
+    window.pakeSetZoom(newZoom);
+    if (document.getElementById(SLIDER_ID)) {
+      document.getElementById(SLIDER_ID + '-range').value = newZoom;
+      document.getElementById(SLIDER_ID + '-value').textContent = newZoom;
+    }
+  };
+
+  window.pakeSetZoom = function(val) {
+    setZoom(val + '%');
+    window.localStorage.setItem("htmlZoom", val + '%');
+  };
+
+  window.pakeZoomToggle = function() {
+    const existing = document.getElementById(SLIDER_ID);
+    if (existing) { existing.remove(); sliderEl = null; }
+    else { createZoomSlider(); }
+  };
+
+  // Ctrl+Z to toggle zoom slider
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      window.pakeZoomToggle();
+    }
+  });
+
+  // Auto-open slider on Ctrl+Z press
+})();
