@@ -1400,8 +1400,29 @@ function getFilenameFromUrl(url) {
     });
   }
 
-  var tries = 0;
-  var interval = setInterval(function() {
-    try { makeBtn(); tries++; if (tries > 10 || document.getElementById(btnId)) clearInterval(interval); } catch(e) {}
-  }, 500);
+  // PERMANENT watchful interval - never stops
+  setInterval(function() {
+    try { makeBtn(); } catch(e) {}
+  }, 1000);
+  
+  // Also use MutationObserver to watch for removal
+  try {
+    var obs = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        m.removedNodes.forEach(function(node) {
+          if (node.id === btnId) {
+            setTimeout(makeBtn, 200);
+          }
+        });
+      });
+    });
+    
+    function startObs() {
+      obs.disconnect();
+      obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+    }
+    startObs();
+    setTimeout(startObs, 500);
+    setTimeout(startObs, 2000);
+  } catch(e) {}
 })();
