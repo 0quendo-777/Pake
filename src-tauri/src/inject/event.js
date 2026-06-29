@@ -1235,7 +1235,7 @@ function getFilenameFromUrl(url) {
 
   // Ctrl+Z to toggle zoom slider
   document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 'z') {
+    if (e.ctrlKey && e.shiftKey && e.key === "Z") {
       e.preventDefault();
       window.pakeZoomToggle();
     }
