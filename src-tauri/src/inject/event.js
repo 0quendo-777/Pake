@@ -1153,115 +1153,147 @@ function getFilenameFromUrl(url) {
 }
 
 // Stable Zoom Button - Created once, recreated lazily
-(function() {
-  var BTN_ID = 'pake-stable-zoom';
+(function () {
+  var BTN_ID = "pake-stable-zoom";
   var created = false;
-  
+
   function makeBtn() {
     try {
       var existing = document.getElementById(BTN_ID);
       if (existing) return;
-      
+
       var zoom = 100;
-      try { var s = localStorage.getItem('htmlZoom'); if (s) zoom = parseInt(s); } catch(e) {}
-      
-      var btn = document.createElement('div');
+      try {
+        var s = localStorage.getItem("htmlZoom");
+        if (s) zoom = parseInt(s);
+      } catch (e) {}
+
+      var btn = document.createElement("div");
       btn.id = BTN_ID;
-      btn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:56px;height:56px;background:linear-gradient(135deg,#5865F2,#7289DA);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2147483647;box-shadow:0 4px 20px rgba(88,101,242,0.5);pointer-events:auto;';
-      btn.innerHTML = '<span style="color:#fff;font-size:13px;font-weight:700;">' + zoom + '%</span>';
-      
+      btn.style.cssText =
+        "position:fixed;bottom:20px;right:20px;width:56px;height:56px;background:linear-gradient(135deg,#5865F2,#7289DA);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2147483647;box-shadow:0 4px 20px rgba(88,101,242,0.5);pointer-events:auto;";
+      btn.innerHTML =
+        '<span style="color:#fff;font-size:13px;font-weight:700;">' +
+        zoom +
+        "%</span>";
+
       var panel = null;
-      btn.addEventListener('click', function() {
+      btn.addEventListener("click", function () {
         if (panel) {
           panel.parentNode && panel.parentNode.removeChild(panel);
           panel = null;
           return;
         }
-        
-        zoom = parseInt(localStorage.getItem('htmlZoom')) || 100;
-        
-        panel = document.createElement('div');
-        panel.style.cssText = 'position:fixed;bottom:90px;right:20px;background:#1e1e1e;border:1px solid #444;border-radius:12px;padding:16px;z-index:2147483647;font-family:Segoe UI,sans-serif;min-width:180px;';
-        panel.innerHTML = '<div style="color:#888;font-size:11px;text-align:center;margin-bottom:6px;">ZOOM</div>' +
-          '<div id="pz-val" style="color:#58a6ff;font-size:28px;font-weight:700;text-align:center;">' + zoom + '%</div>' +
-          '<input type="range" id="pz-range" min="30" max="200" value="' + zoom + '" style="width:100%;margin:8px 0;">' +
+
+        zoom = parseInt(localStorage.getItem("htmlZoom")) || 100;
+
+        panel = document.createElement("div");
+        panel.style.cssText =
+          "position:fixed;bottom:90px;right:20px;background:#1e1e1e;border:1px solid #444;border-radius:12px;padding:16px;z-index:2147483647;font-family:Segoe UI,sans-serif;min-width:180px;";
+        panel.innerHTML =
+          '<div style="color:#888;font-size:11px;text-align:center;margin-bottom:6px;">ZOOM</div>' +
+          '<div id="pz-val" style="color:#58a6ff;font-size:28px;font-weight:700;text-align:center;">' +
+          zoom +
+          "%</div>" +
+          '<input type="range" id="pz-range" min="30" max="200" value="' +
+          zoom +
+          '" style="width:100%;margin:8px 0;">' +
           '<div style="display:flex;gap:6px;">' +
-            '<button id="pz-minus" style="flex:1;background:#333;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;">-10</button>' +
-            '<button id="pz-plus" style="flex:1;background:#333;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;">+10</button>' +
-          '</div>' +
+          '<button id="pz-minus" style="flex:1;background:#333;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;">-10</button>' +
+          '<button id="pz-plus" style="flex:1;background:#333;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;">+10</button>' +
+          "</div>" +
           '<div style="display:flex;gap:6px;margin-top:6px;">' +
-            '<button id="pz-close" style="flex:1;background:#d32f2f;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:11px;">Close</button>' +
-          '</div>';
-        
+          '<button id="pz-close" style="flex:1;background:#d32f2f;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:11px;">Close</button>' +
+          "</div>";
+
         document.body.appendChild(panel);
-        
-        var range = document.getElementById('pz-range');
-        var valD = document.getElementById('pz-val');
-        
-        range.addEventListener('input', function() {
+
+        var range = document.getElementById("pz-range");
+        var valD = document.getElementById("pz-val");
+
+        range.addEventListener("input", function () {
           var v = this.value;
-          valD.textContent = v + '%';
+          valD.textContent = v + "%";
           doZoom(v);
         });
-        
-        document.getElementById('pz-minus').onclick = function() {
+
+        document.getElementById("pz-minus").onclick = function () {
           var v = Math.max(30, parseInt(range.value) - 10);
           range.value = v;
-          valD.textContent = v + '%';
+          valD.textContent = v + "%";
           doZoom(v);
         };
-        
-        document.getElementById('pz-plus').onclick = function() {
+
+        document.getElementById("pz-plus").onclick = function () {
           var v = Math.min(200, parseInt(range.value) + 10);
           range.value = v;
-          valD.textContent = v + '%';
+          valD.textContent = v + "%";
           doZoom(v);
         };
-        
-        document.getElementById('pz-close').onclick = function() {
-          if (panel) { panel.parentNode.removeChild(panel); panel = null; }
+
+        document.getElementById("pz-close").onclick = function () {
+          if (panel) {
+            panel.parentNode.removeChild(panel);
+            panel = null;
+          }
         };
       });
-      
+
       document.body.appendChild(btn);
       created = true;
-    } catch(e) {}
+    } catch (e) {}
   }
-  
+
   function doZoom(val) {
     try {
-      if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-        window.__TAURI__.core.invoke('set_zoom', { percent: parseFloat(val) }).catch(function() {});
+      if (
+        window.__TAURI__ &&
+        window.__TAURI__.core &&
+        window.__TAURI__.core.invoke
+      ) {
+        window.__TAURI__.core
+          .invoke("set_zoom", { percent: parseFloat(val) })
+          .catch(function () {});
       }
-      localStorage.setItem('htmlZoom', val + '%');
+      localStorage.setItem("htmlZoom", val + "%");
       var btn = document.getElementById(BTN_ID);
-      if (btn) btn.innerHTML = '<span style="color:#fff;font-size:13px;font-weight:700;">' + val + '%</span>';
-    } catch(e) {}
+      if (btn)
+        btn.innerHTML =
+          '<span style="color:#fff;font-size:13px;font-weight:700;">' +
+          val +
+          "%</span>";
+    } catch (e) {}
   }
-  
+
   // Create once after load
   if (document.body) {
     setTimeout(makeBtn, 1000);
     setTimeout(makeBtn, 2500);
   } else {
-    document.addEventListener('DOMContentLoaded', function() { setTimeout(makeBtn, 1000); });
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(makeBtn, 1000);
+    });
   }
-  
+
   // Gentle check every 3 seconds - only recreate if missing, not aggressive
-  setInterval(function() {
+  setInterval(function () {
     if (!document.getElementById(BTN_ID)) {
-      try { makeBtn(); } catch(e) {}
+      try {
+        makeBtn();
+      } catch (e) {}
     }
     // Close panel if button was recreated (clean slate)
     // Don't interfere if panel exists
   }, 3000);
-  
+
   // Also save initial zoom on load if set
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      var z = localStorage.getItem('htmlZoom');
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      var z = localStorage.getItem("htmlZoom");
       if (z && window.__TAURI__ && window.__TAURI__.core) {
-        window.__TAURI__.core.invoke('set_zoom', { percent: parseFloat(z) }).catch(function() {});
+        window.__TAURI__.core
+          .invoke("set_zoom", { percent: parseFloat(z) })
+          .catch(function () {});
       }
     }, 2000);
   });
