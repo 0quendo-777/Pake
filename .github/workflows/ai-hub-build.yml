@@ -50,13 +50,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         timeout-minutes: 20
         run: |
-          cp ai-hub-launcher.html dist/index.html
-          ARGS=("dist/index.html" "--name" "AI-Hub")
-          ARGS+=("--use-local-file")
-          ARGS+=("--width" "900")
-          ARGS+=("--height" "700")
-          ARGS+=("--zoom" "100")
-          node dist/cli.js "${ARGS[@]}" --targets deb,appimage
+          cd ${{ github.workspace }}
+          pwd
+          ls -la ai-hub-launcher.html
+          node dist/cli.js "ai-hub-launcher.html" --name "AI-Hub" --use-local-file --width 900 --height 700 --zoom 100 --targets deb,appimage
           mkdir -p output/linux
           if [ -f "AI-Hub.deb" ]; then
             mv "AI-Hub.deb" output/linux/AI-Hub_`arch`.deb
@@ -75,13 +72,8 @@ jobs:
         env:
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
         run: |
-          cp ai-hub-launcher.html dist/index.html
-          ARGS=("dist/index.html" "--name" "AI-Hub" "--hide-title-bar")
-          ARGS+=("--use-local-file")
-          ARGS+=("--width" "900")
-          ARGS+=("--height" "700")
-          ARGS+=("--zoom" "100")
-          node dist/cli.js "${ARGS[@]}" --targets universal --multi-arch
+          cd ${{ github.workspace }}
+          node dist/cli.js "ai-hub-launcher.html" --name "AI-Hub" --use-local-file --hide-title-bar --width 900 --height 700 --zoom 100 --targets universal --multi-arch
           mkdir -p output/macos
           if [ -f "AI-Hub.dmg" ]; then
             mv "AI-Hub.dmg" output/macos/AI-Hub.dmg
@@ -93,15 +85,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         timeout-minutes: 20
         run: |
-          Copy-Item ai-hub-launcher.html dist/index.html -Force
-          $args = "dist/index.html", "--name", "AI-Hub"
-          $args += "--use-local-file"
-          $args += "--width", "900"
-          $args += "--height", "700"
-          $args += "--zoom", "100"
-          $args += "--targets", "x64"
-          node dist/cli.js $args
-          New-Item -Path "output\windows" -ItemType Directory -Force
+          cd ${{ github.workspace }}
+          node dist/cli.js ai-hub-launcher.html --name AI-Hub --use-local-file --width 900 --height 700 --zoom 100 --targets x64
+          New-Item -Path output\windows -ItemType Directory -Force
           if (Test-Path "AI-Hub.msi") {
             Move-Item -Path "AI-Hub.msi" -Destination "output\windows\AI-Hub_x64.msi"
           } else {
