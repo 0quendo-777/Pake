@@ -1225,6 +1225,7 @@ function getFilenameFromUrl(url) {
   window.pakeSetZoom = function(val) {
     setZoom(val + '%');
     window.localStorage.setItem("htmlZoom", val + '%');
+    if (window.pakeUpdateZoomDisplay) window.pakeUpdateZoomDisplay(val);
   };
 
   window.pakeZoomToggle = function() {
@@ -1242,4 +1243,89 @@ function getFilenameFromUrl(url) {
   });
 
   // Auto-open slider on Ctrl+Z press
+})();
+
+// Floating Zoom Button - Always visible
+(function() {
+  const FLOAT_ID = 'pake-zoom-float';
+  
+  function createFloatButton() {
+    if (document.getElementById(FLOAT_ID)) return;
+    
+    const zoom = parseInt(window.localStorage.getItem("htmlZoom") || (window.pakeConfig?.zoom || 100));
+    
+    const btn = document.createElement('div');
+    btn.id = FLOAT_ID;
+    btn.innerHTML = `
+      <style>
+        #${FLOAT_ID} {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 44px;
+          height: 44px;
+          background: linear-gradient(135deg, #5865F2, #7289DA);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 2147483646;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 700;
+          user-select: none;
+        }
+        #${FLOAT_ID}:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+        #${FLOAT_ID}.small {
+          width: 36px;
+          height: 36px;
+          font-size: 10px;
+        }
+        #${FLOAT_ID}.medium {
+          width: 44px;
+          height: 44px;
+          font-size: 11px;
+        }
+        #${FLOAT_ID}.large {
+          width: 52px;
+          height: 52px;
+          font-size: 12px;
+        }
+      </style>
+      <span id="${FLOAT_ID}-text">${zoom}%</span>
+    `;
+    
+    btn.onclick = function() {
+      if (window.pakeZoomSlider) window.pakeZoomSlider();
+    };
+    
+    document.body.appendChild(btn);
+  }
+  
+  // Also expose update function
+  window.pakeUpdateZoomDisplay = function(zoom) {
+    const text = document.getElementById(FLOAT_ID + '-text');
+    const btn = document.getElementById(FLOAT_ID);
+    if (text) text.textContent = zoom + '%';
+    
+    if (btn) {
+      btn.classList.remove('small', 'medium', 'large');
+      if (zoom <= 50) btn.classList.add('small');
+      else if (zoom >= 150) btn.classList.add('large');
+      else btn.classList.add('medium');
+    }
+  };
+  
+  // Create button when DOM ready
+  if (document.body) {
+    createFloatButton();
+  } else {
+    document.addEventListener('DOMContentLoaded', createFloatButton);
+  }
 })();
