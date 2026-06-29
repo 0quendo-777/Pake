@@ -1225,7 +1225,7 @@ function getFilenameFromUrl(url) {
   window.pakeSetZoom = function(val) {
     setZoom(val + '%');
     window.localStorage.setItem("htmlZoom", val + '%');
-    if (window.pakeUpdateZoomDisplay) window.pakeUpdateZoomDisplay(val);
+    if (window.pakeUpdateZoomBtn) window.pakeUpdateZoomBtn(val);
   };
 
   window.pakeZoomToggle = function() {
@@ -1245,87 +1245,60 @@ function getFilenameFromUrl(url) {
   // Auto-open slider on Ctrl+Z press
 })();
 
-// Floating Zoom Button - Always visible
+// SUPER ROBUST FLOATING ZOOM BUTTON
 (function() {
-  const FLOAT_ID = 'pake-zoom-float';
+  var FLOAT_ID = "pake-zoom-btn-fixed";
+  var created = false;
   
-  function createFloatButton() {
-    if (document.getElementById(FLOAT_ID)) return;
-    
-    const zoom = parseInt(window.localStorage.getItem("htmlZoom") || (window.pakeConfig?.zoom || 100));
-    
-    const btn = document.createElement('div');
-    btn.id = FLOAT_ID;
-    btn.innerHTML = `
-      <style>
-        #${FLOAT_ID} {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 44px;
-          height: 44px;
-          background: linear-gradient(135deg, #5865F2, #7289DA);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 2147483646;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          color: #fff;
-          font-size: 11px;
-          font-weight: 700;
-          user-select: none;
-        }
-        #${FLOAT_ID}:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-        }
-        #${FLOAT_ID}.small {
-          width: 36px;
-          height: 36px;
-          font-size: 10px;
-        }
-        #${FLOAT_ID}.medium {
-          width: 44px;
-          height: 44px;
-          font-size: 11px;
-        }
-        #${FLOAT_ID}.large {
-          width: 52px;
-          height: 52px;
-          font-size: 12px;
-        }
-      </style>
-      <span id="${FLOAT_ID}-text">${zoom}%</span>
-    `;
-    
-    btn.onclick = function() {
-      if (window.pakeZoomSlider) window.pakeZoomSlider();
-    };
-    
-    document.body.appendChild(btn);
+  function makeButton() {
+    try {
+      var existing = document.getElementById(FLOAT_ID);
+      if (existing) existing.parentNode.removeChild(existing);
+      
+      var zoom = 100;
+      try {
+        var stored = window.localStorage.getItem("htmlZoom");
+        if (stored) zoom = parseInt(stored);
+        else if (window.pakeConfig && window.pakeConfig.zoom) zoom = window.pakeConfig.zoom;
+      } catch(e) {}
+      
+      var btn = document.createElement("div");
+      btn.id = FLOAT_ID;
+      btn.style.cssText = "position:fixed!important;bottom:20px!important;right:20px!important;width:56px!important;height:56px!important;background:#5865F2!important;border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;cursor:pointer!important;z-index:2147483647!important;box-shadow:0 4px 20px rgba(88,101,242,0.5)!important;font-family:Segoe UI,Roboto,sans-serif!important;color:#fff!important;font-size:14px!important;font-weight:700!important;pointer-events:auto!important;";
+      btn.innerHTML = "<span style=\"color:#fff!important;font-size:15px!important;font-weight:800!important;text-shadow:0 1px 3px rgba(0,0,0,0.3)\">" + zoom + "%</span>";
+      btn.onclick = function() { window.pakeZoomSlider(); };
+      
+      document.documentElement.appendChild(btn);
+      created = true;
+    } catch(e) {
+      console.log("Zoom button error:", e);
+    }
   }
   
-  // Also expose update function
-  window.pakeUpdateZoomDisplay = function(zoom) {
-    const text = document.getElementById(FLOAT_ID + '-text');
-    const btn = document.getElementById(FLOAT_ID);
-    if (text) text.textContent = zoom + '%';
-    
-    if (btn) {
-      btn.classList.remove('small', 'medium', 'large');
-      if (zoom <= 50) btn.classList.add('small');
-      else if (zoom >= 150) btn.classList.add('large');
-      else btn.classList.add('medium');
-    }
+  window.pakeUpdateZoomBtn = function(z) {
+    var btn = document.getElementById(FLOAT_ID);
+    if (btn) btn.innerHTML = "<span style=\"color:#fff!important;font-size:15px!important;font-weight:800!important;text-shadow:0 1px 3px rgba(0,0,0,0.3)\">" + z + "%</span>";
   };
   
-  // Create button when DOM ready
-  if (document.body) {
-    createFloatButton();
-  } else {
-    document.addEventListener('DOMContentLoaded', createFloatButton);
+  // Try multiple times with delays
+  function attempt() {
+    if (!created) makeButton();
   }
+  
+  setTimeout(attempt, 100);
+  setTimeout(attempt, 500);
+  setTimeout(attempt, 1000);
+  setTimeout(attempt, 2000);
+  
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() { setTimeout(attempt, 100); });
+  }
+  
+  // Mutation observer to catch when body is added
+  try {
+    var obs = new MutationObserver(function() {
+      if (!created) attempt();
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+  } catch(e) {}
 })();
