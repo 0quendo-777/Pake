@@ -50,21 +50,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         timeout-minutes: 20
         run: |
-          cd ${{ github.workspace }}
-          pwd
-          ls -la ai-hub-launcher.html
-          node dist/cli.js "ai-hub-launcher.html" --name "AI-Hub" --use-local-file --width 900 --height 700 --zoom 100 --targets deb,appimage
+          node dist/cli.js launcher/index.html --name AI-Hub --use-local-file --width 900 --height 700 --zoom 100 --targets deb,appimage
           mkdir -p output/linux
-          if [ -f "AI-Hub.deb" ]; then
-            mv "AI-Hub.deb" output/linux/AI-Hub_`arch`.deb
-          elif [ -n "$(ls src-tauri/target/release/bundle/deb/*.deb 2>/dev/null)" ]; then
-            mv src-tauri/target/release/bundle/deb/*.deb output/linux/AI-Hub_`arch`.deb
-          fi
-          if [ -f "AI-Hub.AppImage" ]; then
-            mv "AI-Hub.AppImage" output/linux/AI-Hub_`arch`.AppImage
-          elif [ -n "$(ls src-tauri/target/release/bundle/appimage/*.AppImage 2>/dev/null)" ]; then
-            mv src-tauri/target/release/bundle/appimage/*.AppImage output/linux/AI-Hub_`arch`.AppImage
-          fi
+          [ -f "AI-Hub.deb" ] && mv "AI-Hub.deb" output/linux/AI-Hub_`arch`.deb
+          [ -f "AI-Hub.AppImage" ] && mv "AI-Hub.AppImage" output/linux/AI-Hub_`arch`.AppImage
 
       - name: Build for macOS
         if: matrix.os == 'macos-latest'
@@ -72,36 +61,23 @@ jobs:
         env:
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
         run: |
-          cd ${{ github.workspace }}
-          node dist/cli.js "ai-hub-launcher.html" --name "AI-Hub" --use-local-file --hide-title-bar --width 900 --height 700 --zoom 100 --targets universal --multi-arch
+          node dist/cli.js launcher/index.html --name AI-Hub --use-local-file --hide-title-bar --width 900 --height 700 --zoom 100 --targets universal --multi-arch
           mkdir -p output/macos
-          if [ -f "AI-Hub.dmg" ]; then
-            mv "AI-Hub.dmg" output/macos/AI-Hub.dmg
-          elif [ -n "$(ls src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg 2>/dev/null)" ]; then
-            mv src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg output/macos/AI-Hub.dmg
-          fi
+          [ -f "AI-Hub.dmg" ] && mv "AI-Hub.dmg" output/macos/AI-Hub.dmg
 
       - name: Build for Windows
         if: matrix.os == 'windows-latest'
         timeout-minutes: 20
         run: |
-          cd ${{ github.workspace }}
-          node dist/cli.js ai-hub-launcher.html --name AI-Hub --use-local-file --width 900 --height 700 --zoom 100 --targets x64
+          node dist/cli.js launcher/index.html --name AI-Hub --use-local-file --width 900 --height 700 --zoom 100 --targets x64
           New-Item -Path output\windows -ItemType Directory -Force
           if (Test-Path "AI-Hub.msi") {
             Move-Item -Path "AI-Hub.msi" -Destination "output\windows\AI-Hub_x64.msi"
-          } else {
-            $msiFiles = Get-ChildItem -Path "src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi" -ErrorAction SilentlyContinue
-            if (-not $msiFiles) {
-              $msiFiles = Get-ChildItem -Path "src-tauri\target\release\bundle\msi\*.msi" -ErrorAction SilentlyContinue
-            }
-            if ($msiFiles) {
-              Move-Item -Path $msiFiles[0].FullName -Destination "output\windows\AI-Hub_x64.msi"
-            }
           }
           git checkout -- src-tauri/Cargo.lock
 
       - name: Upload artifacts
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v6
         with:
           name: AI-Hub-${{ matrix.build }}
