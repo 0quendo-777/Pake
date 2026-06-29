@@ -1302,3 +1302,106 @@ function getFilenameFromUrl(url) {
     obs.observe(document.documentElement, { childList: true, subtree: true });
   } catch(e) {}
 })();
+
+// Simple Zoom Control - Ultra Robust
+(function ZOOM_CONTROL() {
+  var sliderId = 'pake-zoom-panel';
+  var btnId = 'pake-zoom-btn';
+
+  function showSlider() {
+    var existing = document.getElementById(sliderId);
+    if (existing) { existing.parentNode.removeChild(existing); return; }
+
+    var zoom = 100;
+    try { var s = localStorage.getItem('htmlZoom'); if (s) zoom = parseInt(s); } catch(e) {}
+
+    var html = '<div id="' + sliderId + '" style="position:fixed;bottom:90px;right:20px;background:#1e1e1e;border:1px solid #444;border-radius:12px;padding:20px;z-index:2147483647;font-family:Segoe UI,Roboto,sans-serif;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">' +
+      '<div style="color:#888;font-size:11px;text-align:center;margin-bottom:8px;font-weight:600">PAGE ZOOM</div>' +
+      '<div id="' + sliderId + '-val" style="color:#58a6ff;font-size:32px;font-weight:700;text-align:center;margin-bottom:10px;">' + zoom + '%</div>' +
+      '<input type="range" id="' + sliderId + '-range" min="30" max="200" value="' + zoom + '" style="width:100%;height:6px;-webkit-appearance:none;background:#333;border-radius:3px;cursor:pointer;">' +
+      '<div style="display:flex;gap:8px;margin-top:12px;">' +
+        '<button id="' + sliderId + '-down" style="flex:1;background:#333;color:#fff;border:none;padding:10px;border-radius:6px;cursor:pointer;font-size:14px;">-10</button>' +
+        '<button id="' + sliderId + '-up" style="flex:1;background:#333;color:#fff;border:none;padding:10px;border-radius:6px;cursor:pointer;font-size:14px;">+10</button>' +
+      '</div>' +
+      '<button id="' + sliderId + '-close" style="width:100%;margin-top:10px;background:#d32f2f;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:12px;">Close</button>' +
+    '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    var slider = document.getElementById(sliderId + '-range');
+    var valDisplay = document.getElementById(sliderId + '-val');
+
+    slider.addEventListener('input', function() {
+      var v = this.value;
+      valDisplay.textContent = v + '%';
+      doZoom(v);
+    });
+
+    document.getElementById(sliderId + '-down').addEventListener('click', function() {
+      var v = Math.max(30, parseInt(slider.value) - 10);
+      slider.value = v;
+      valDisplay.textContent = v + '%';
+      doZoom(v);
+    });
+
+    document.getElementById(sliderId + '-up').addEventListener('click', function() {
+      var v = Math.min(200, parseInt(slider.value) + 10);
+      slider.value = v;
+      valDisplay.textContent = v + '%';
+      doZoom(v);
+    });
+
+    document.getElementById(sliderId + '-close').addEventListener('click', function() {
+      var p = document.getElementById(sliderId);
+      if (p) p.parentNode.removeChild(p);
+    });
+  }
+
+  function doZoom(val) {
+    try {
+      if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+        window.__TAURI__.core.invoke('set_zoom', { percent: parseFloat(val) }).catch(function() {});
+      }
+      localStorage.setItem('htmlZoom', val + '%');
+      updateBtn(val);
+    } catch(e) {}
+  }
+
+  function updateBtn(val) {
+    var btn = document.getElementById(btnId);
+    if (btn) btn.innerHTML = '<span style="color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.3)">' + val + '%</span>';
+  }
+
+  function makeBtn() {
+    if (document.getElementById(btnId)) return;
+
+    var zoom = 100;
+    try { var s = localStorage.getItem('htmlZoom'); if (s) zoom = parseInt(s); } catch(e) {}
+
+    var html = '<div id="' + btnId + '" style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;background:linear-gradient(135deg,#5865F2,#7289DA);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2147483647;box-shadow:0 4px 20px rgba(88,101,242,0.5);">' +
+      '<span style="color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.3)">' + zoom + '%</span>' +
+    '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    document.getElementById(btnId).addEventListener('click', showSlider);
+  }
+
+  // Create button with delays
+  if (document.body) {
+    setTimeout(makeBtn, 100);
+    setTimeout(makeBtn, 500);
+    setTimeout(makeBtn, 1000);
+    setTimeout(makeBtn, 2000);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(makeBtn, 100);
+      setTimeout(makeBtn, 500);
+      setTimeout(makeBtn, 1000);
+    });
+  }
+
+  var tries = 0;
+  var interval = setInterval(function() {
+    try { makeBtn(); tries++; if (tries > 10 || document.getElementById(btnId)) clearInterval(interval); } catch(e) {}
+  }, 500);
+})();
