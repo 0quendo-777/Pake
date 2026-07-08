@@ -1,0 +1,145 @@
+name: Build Microsoft Teams App
+
+on:
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10.26.2"
+
+jobs:
+  build:
+    name: Teams (${{ matrix.build }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [linux, macos, windows]
+        include:
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+          - build: windows
+            os: windows-latest
+            rust: stable-x86_64-msvc
+          - build: macos
+            os: macos-latest
+            rust: stable
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Setup Node.js Environment
+        uses: ./.github/actions/setup-env
+        with:
+          mode: build
+
+      - name: Build CLI
+        run: pnpm run cli:build
+
+      - name: Setup mold linker
+        if: matrix.os == 'ubuntu-latest'
+        uses: rui314/setup-mold@v1
+
+      - name: Build for Linux
+        if: matrix.os == 'ubuntu-latest'
+        timeout-minutes: 20
+        run: |
+          ARGS=("https://teams.microsoft.com/" "--name" "Teams")
+
+          if [ -f "src-tauri/png/teams_512.png" ]; then
+            ARGS+=("--icon" "src-tauri/png/teams_512.png")
+          fi
+
+          ARGS+=("--width" "1200")
+          ARGS+=("--height" "800")
+          ARGS+=("--zoom" "100")
+
+          node dist/cli.js "${ARGS[@]}" --targets deb,appimage
+
+          mkdir -p output/linux
+
+          if [ -f "Teams.deb" ]; then
+            mv "Teams.deb" output/linux/Teams_`arch`.deb
+          elif [ -n "$(ls src-tauri/target/release/bundle/deb/*.deb 2>/dev/null)" ]; then
+            mv src-tauri/target/release/bundle/deb/*.deb output/linux/Teams_`arch`.deb
+          fi
+
+          if [ -f "Teams.AppImage" ]; then
+            mv "Teams.AppImage" output/linux/Teams_`arch`.AppImage
+          elif [ -n "$(ls src-tauri/target/release/bundle/appimage/*.AppImage 2>/dev/null)" ]; then
+            mv src-tauri/target/release/bundle/appimage/*.AppImage output/linux/Teams_`arch`.AppImage
+          fi
+
+      - name: Build for macOS
+        if: matrix.os == 'macos-latest'
+        timeout-minutes: 25
+        env:
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
+        run: |
+          ARGS=("https://teams.microsoft.com/" "--name" "Teams" "--hide-title-bar")
+
+          if [ -f "src-tauri/icons/teams.icns" ]; then
+            ARGS+=("--icon" "src-tauri/icons/teams.icns")
+          fi
+
+          ARGS+=("--width" "1200")
+          ARGS+=("--height" "800")
+          ARGS+=("--zoom" "100")
+
+          node dist/cli.js "${ARGS[@]}" --targets universal --multi-arch
+
+          mkdir -p output/macos
+
+          if [ -f "Teams.dmg" ]; then
+            mv "Teams.dmg" output/macos/Teams.dmg
+          elif [ -n "$(ls src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg 2>/dev/null)" ]; then
+            mv src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg output/macos/Teams.dmg
+          fi
+
+      - name: Build for Windows
+        if: matrix.os == 'windows-latest'
+        timeout-minutes: 20
+        run: |
+          $args = "https://teams.microsoft.com/", "--name", "Teams"
+
+          if (Test-Path "src-tauri\png\teams_256.ico") {
+            $args += "--icon", "src-tauri\png\teams_256.ico"
+          }
+
+          $args += "--width", "1200"
+          $args += "--height", "800"
+          $args += "--zoom", "100"
+
+          $args += "--targets", "x64"
+
+          node dist/cli.js $args
+
+          New-Item -Path "output\windows" -ItemType Directory -Force
+
+          if (Test-Path "Teams.msi") {
+            Move-Item -Path "Teams.msi" -Destination "output\windows\Teams_x64.msi"
+          } else {
+            $msiFiles = Get-ChildItem -Path "src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi" -ErrorAction SilentlyContinue
+            if (-not $msiFiles) {
+              $msiFiles = Get-ChildItem -Path "src-tauri\target\release\bundle\msi\*.msi" -ErrorAction SilentlyContinue
+            }
+            if ($msiFiles) {
+              Move-Item -Path $msiFiles[0].FullName -Destination "output\windows\Teams_x64.msi"
+            }
+          }
+
+          git checkout -- src-tauri/Cargo.lock
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: Teams-${{ matrix.build }}
+          path: output/*/*.*
+          retention-days: 3
